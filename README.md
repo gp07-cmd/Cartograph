@@ -113,6 +113,7 @@ Only a JDK 17 and Maven are required — SQLite is embedded, nothing else to ins
 | Key | Default | What it does |
 |---|---|---|
 | `cartograph.sqlite.path` | `./data/cartograph.db` | Where graph snapshots are persisted |
+| `cartograph.persistence.retention-per-repo` | `10` | Snapshots kept per repository (0 = keep all) |
 | `cartograph.github.token` | — (env: `GITHUB_TOKEN`) | GitHub token; raises API rate limits |
 | `cartograph.github.base-url` | `https://api.github.com` | GitHub API base URL (overridable for testing) |
 | `cartograph.github.max-files` | `10000` | Max supported candidate files |
@@ -147,6 +148,10 @@ mvn spring-boot:run -Dspring-boot.run.arguments="--server.port=8081 --cartograph
 ### `GET /actuator/health`
 
 Liveness probe — returns `{"status":"UP"}` while the service is running.
+
+### `GET /api/v1/repositories`
+
+Lists every indexed repository with its latest commit and index time. Supports `?limit=` (1–100, default 50) and `?offset=` pagination. Pure local lookup.
 
 ### `GET /api/v1/repositories/{owner}/{repo}`
 

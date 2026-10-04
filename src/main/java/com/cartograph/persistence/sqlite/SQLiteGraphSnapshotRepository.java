@@ -31,15 +31,24 @@ public final class SQLiteGraphSnapshotRepository implements GraphSnapshotReposit
     private final JdbcTemplate jdbc;
     private final TransactionTemplate transaction;
     private final ObjectMapper objectMapper;
+    private final int retentionPerRepo;
 
     public SQLiteGraphSnapshotRepository(DataSource dataSource) {
-        this(dataSource, new ObjectMapper());
+        this(dataSource, new ObjectMapper(), 10);
     }
 
     SQLiteGraphSnapshotRepository(DataSource dataSource, ObjectMapper objectMapper) {
+        this(dataSource, objectMapper, 10);
+    }
+
+    /**
+     * @param retentionPerRepo snapshots kept per repository; zero or negative disables retention
+     */
+    public SQLiteGraphSnapshotRepository(DataSource dataSource, ObjectMapper objectMapper, int retentionPerRepo) {
         this.jdbc = new JdbcTemplate(dataSource);
         this.transaction = new TransactionTemplate(new DataSourceTransactionManager(dataSource));
         this.objectMapper = objectMapper;
+        this.retentionPerRepo = retentionPerRepo;
         initializeSchema(dataSource);
     }
 
@@ -63,6 +72,16 @@ public final class SQLiteGraphSnapshotRepository implements GraphSnapshotReposit
                         rs.getString("metrics_json"), rs.getString("warnings_json")), repository);
         if (records.isEmpty()) return Optional.empty();
         return Optional.of(loadSnapshot(records.get(0)));
+    }
+
+    @Override
+    public List<GraphSnapshotRepository.RepositorySummary> listRepositories() {
+        return jdbc.query(
+                "SELECT rs.repository, rs.commit_sha, rs.indexed_at FROM repository_snapshot rs "
+                        + "WHERE rs.id = (SELECT MAX(r2.id) FROM repository_snapshot r2 WHERE r2.repository = rs.repository) "
+                        + "ORDER BY rs.indexed_at DESC, rs.id DESC",
+                (rs, n) -> new GraphSnapshotRepository.RepositorySummary(rs.getString("repository"),
+                        rs.getString("commit_sha"), rs.getString("indexed_at")));
     }
 
     private GraphSnapshot loadSnapshot(SnapshotRecord record) {
@@ -101,7 +120,16 @@ public final class SQLiteGraphSnapshotRepository implements GraphSnapshotReposit
                         location == null ? null : location.startColumn(), location == null ? null : location.endLine(),
                         location == null ? null : location.endColumn());
             }
+            if (retentionPerRepo > 0) {
+                pruneOldSnapshots(snapshot.repository());
+            }
         });
+    }
+
+    private void pruneOldSnapshots(String repository) {
+        jdbc.update("DELETE FROM repository_snapshot WHERE repository = ? AND id NOT IN "
+                + "(SELECT id FROM repository_snapshot WHERE repository = ? ORDER BY indexed_at DESC, id DESC LIMIT ?)",
+                repository, repository, retentionPerRepo);
     }
 
     private void initializeSchema(DataSource dataSource) {

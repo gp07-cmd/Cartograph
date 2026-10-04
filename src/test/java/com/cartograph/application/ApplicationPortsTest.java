@@ -32,6 +32,9 @@ class ApplicationPortsTest {
             @Override public Optional<GraphSnapshot> findLatest(String repository) {
                 return Optional.empty();
             }
+            @Override public java.util.List<GraphSnapshotRepository.RepositorySummary> listRepositories() {
+                return java.util.List.of();
+            }
             @Override public void save(GraphSnapshot snapshot) { }
         };
 

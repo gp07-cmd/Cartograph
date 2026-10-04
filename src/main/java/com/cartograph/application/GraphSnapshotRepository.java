@@ -1,5 +1,6 @@
 package com.cartograph.application;
 
+import java.util.List;
 import java.util.Optional;
 
 import com.cartograph.graph.model.GraphSnapshot;
@@ -23,6 +24,16 @@ public interface GraphSnapshotRepository {
      * regardless of commit; empty when the repository was never indexed.
      */
     Optional<GraphSnapshot> findLatest(String repository);
+
+    /** Read model for the repository-discovery endpoint. */
+    record RepositorySummary(String repository, String commitSha, String indexedAt) {
+    }
+
+    /**
+     * Lists every indexed repository with its latest commit, newest first.
+     * Pure local lookup — implementations must not perform I/O beyond the store.
+     */
+    List<RepositorySummary> listRepositories();
 
     void save(GraphSnapshot snapshot);
 }

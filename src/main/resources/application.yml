@@ -22,6 +22,8 @@ management:
 cartograph:
   sqlite:
     path: ./data/cartograph.db
+  persistence:
+    retention-per-repo: 10
   github:
     token: ${GITHUB_TOKEN:}
     base-url: https://api.github.com

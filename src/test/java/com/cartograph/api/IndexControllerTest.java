@@ -1,6 +1,7 @@
 package com.cartograph.api;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.cartograph.application.GraphSnapshotRepository;
 import com.cartograph.application.IndexRepositoryService;
 import com.cartograph.graph.model.GraphMetrics;
 import com.cartograph.graph.model.GraphSnapshot;
@@ -79,6 +80,31 @@ class IndexControllerTest {
                 .andExpect(jsonPath("$.repository").value("acme/widgets"))
                 .andExpect(jsonPath("$.commitSha").value("sha"));
         verify(service, never()).index(anyString());
+    }
+
+    @Test
+    void listsRepositoriesWithoutIndexing() throws Exception {
+        when(service.repositories()).thenReturn(List.of(
+                new GraphSnapshotRepository.RepositorySummary("acme/widgets", "sha-2", "2026-10-03 10:00:00"),
+                new GraphSnapshotRepository.RepositorySummary("acme/other", "sha-9", "2026-10-03 09:00:00")));
+
+        mvc.perform(get("/api/v1/repositories"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.count").value(2))
+                .andExpect(jsonPath("$.repositories[0].repository").value("acme/widgets"))
+                .andExpect(jsonPath("$.repositories[1].commitSha").value("sha-9"));
+        verify(service, never()).index(anyString());
+    }
+
+    @Test
+    void clampsPaginationBounds() throws Exception {
+        when(service.repositories()).thenReturn(List.of(
+                new GraphSnapshotRepository.RepositorySummary("acme/widgets", "sha-2", "2026-10-03 10:00:00")));
+
+        mvc.perform(get("/api/v1/repositories").param("limit", "5000").param("offset", "-10"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.count").value(1))
+                .andExpect(jsonPath("$.repositories.length()").value(1));
     }
 
     @Test

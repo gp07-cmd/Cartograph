@@ -22,6 +22,42 @@ import com.cartograph.graph.model.SourceLocation;
 import com.cartograph.graph.model.SymbolKind;
 
 class SQLiteGraphSnapshotRepositoryTest {
+    @org.junit.jupiter.api.Test
+    void prunesOldSnapshotsBeyondRetentionPerRepository() {
+        SQLiteGraphSnapshotRepository limited = new SQLiteGraphSnapshotRepository(dataSource, new com.fasterxml.jackson.databind.ObjectMapper(), 2);
+        limited.save(snapshot("acme/app", "sha-1"));
+        limited.save(snapshot("acme/app", "sha-2"));
+        limited.save(snapshot("acme/app", "sha-3"));
+        limited.save(snapshot("acme/other", "sha-9"));
+
+        assertThat(limited.find("acme/app", "sha-1")).isEmpty();
+        assertThat(limited.find("acme/app", "sha-2")).isPresent();
+        assertThat(limited.find("acme/app", "sha-3")).isPresent();
+        assertThat(limited.findLatest("acme/app")).isPresent();
+        assertThat(limited.find("acme/other", "sha-9")).isPresent();
+        var orphanedNodes = jdbc.queryForObject("SELECT COUNT(*) FROM graph_node WHERE snapshot_id NOT IN (SELECT id FROM repository_snapshot)", Integer.class);
+        assertThat(orphanedNodes).isZero();
+    }
+
+    @org.junit.jupiter.api.Test
+    void nonPositiveRetentionKeepsEverything() {
+        SQLiteGraphSnapshotRepository unlimited = new SQLiteGraphSnapshotRepository(dataSource, new com.fasterxml.jackson.databind.ObjectMapper(), 0);
+        for (int i = 0; i < 5; i++) {
+            unlimited.save(snapshot("acme/app", "sha-" + i));
+        }
+        assertThat(unlimited.find("acme/app", "sha-0")).isPresent();
+        assertThat(unlimited.find("acme/app", "sha-4")).isPresent();
+    }
+
+    @org.junit.jupiter.api.Test
+    void defaultConstructorKeepsTenSnapshotsPerRepository() {
+        for (int i = 0; i < 12; i++) {
+            repository.save(snapshot("acme/app", "sha-" + i));
+        }
+        var remaining = jdbc.queryForObject("SELECT COUNT(*) FROM repository_snapshot WHERE repository = ?", Integer.class, "acme/app");
+        assertThat(remaining).isEqualTo(10);
+    }
+
     private SQLiteDataSource dataSource;
     private SQLiteGraphSnapshotRepository repository;
     private JdbcTemplate jdbc;
@@ -108,4 +144,24 @@ class SQLiteGraphSnapshotRepositoryTest {
                 List.of(new GraphWarning("DYNAMIC_CALL", "cannot resolve", "src/a.ts", 8)),
                 new GraphMetrics(2, 1, 1, 2));
     }
+    @org.junit.jupiter.api.Test
+    void listsEveryRepositoryWithItsLatestCommitNewestFirst() {
+        repository.save(snapshot("acme/app", "sha-1"));
+        repository.save(snapshot("acme/app", "sha-2"));
+        repository.save(snapshot("acme/other", "sha-9"));
+
+        var summaries = repository.listRepositories();
+
+        assertThat(summaries).hasSize(2);
+        assertThat(summaries.get(0).repository()).isEqualTo("acme/other");
+        assertThat(summaries.get(0).commitSha()).isEqualTo("sha-9");
+        assertThat(summaries.get(1).repository()).isEqualTo("acme/app");
+        assertThat(summaries.get(1).commitSha()).isEqualTo("sha-2");
+    }
+
+    @org.junit.jupiter.api.Test
+    void listRepositoriesIsEmptyOnFreshStore() {
+        assertThat(repository.listRepositories()).isEmpty();
+    }
+
 }

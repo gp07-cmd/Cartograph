@@ -7,6 +7,7 @@ import com.cartograph.graph.model.RepositorySnapshot;
 import com.cartograph.ingestion.GitHubUrlNormalizer;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -67,5 +68,10 @@ public final class IndexRepositoryService {
     public Optional<GraphSnapshot> snapshot(String repository) {
         Objects.requireNonNull(repository, "repository");
         return snapshots.findLatest(repository);
+    }
+
+    /** Lists every indexed repository with its latest commit, newest first. */
+    public List<GraphSnapshotRepository.RepositorySummary> repositories() {
+        return snapshots.listRepositories();
     }
 }

@@ -39,8 +39,9 @@ public class CartographApplication {
     }
     @Bean SourceParser sourceParser() { return new JavaScriptTypeScriptParser(); }
     @Bean GraphBuilder graphBuilder(SourceParser parser) { return new GraphBuilder(parser); }
-    @Bean GraphSnapshotRepository graphSnapshotRepository(DataSource dataSource) {
-        return new SQLiteGraphSnapshotRepository(dataSource);
+    @Bean GraphSnapshotRepository graphSnapshotRepository(DataSource dataSource,
+            @Value("${cartograph.persistence.retention-per-repo:10}") int retentionPerRepo) {
+        return new SQLiteGraphSnapshotRepository(dataSource, new com.fasterxml.jackson.databind.ObjectMapper(), retentionPerRepo);
     }
 
     @Bean
