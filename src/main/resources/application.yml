@@ -54,3 +54,6 @@ cartograph:
     refill-per-minute: 60
   cors:
     allowed-origins: []
+  prewarm:
+    enabled: false
+    repositories: []

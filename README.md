@@ -131,6 +131,8 @@ Only a JDK 17 and Maven are required — SQLite is embedded, nothing else to ins
 | `cartograph.ratelimit.capacity` | `30` | Burst capacity of the per-client token bucket |
 | `cartograph.ratelimit.refill-per-minute` | `60` | Tokens refilled per minute per client |
 | `cartograph.cors.allowed-origins` | — (empty) | Origins allowed to call the API from browsers; empty disables CORS |
+| `cartograph.prewarm.enabled` | `false` | Index configured popular repositories at startup |
+| `cartograph.prewarm.repositories` | — (empty) | Comma-separated `owner/repo` list to pre-warm |
 | `server.port` | `8080` | HTTP port |
 
 Set properties via `src/main/resources/application.yml`, command line (`--cartograph.sqlite.path=…`), or environment variables (relaxed binding: `CARTOGRAPH_GITHUB_MAX_FILES=5000`).
