@@ -34,7 +34,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * or changing a documented one — fails this test.
  */
 @WebMvcTest(controllers = IndexController.class)
-@ContextConfiguration(classes = {IndexController.class, ApiExceptionHandler.class})
+@ContextConfiguration(classes = {IndexController.class, ApiExceptionHandler.class, ErrorContractTest.MetricsConfig.class})
 class ErrorContractTest {
     private static final String URL = "https://github.com/acme/widgets";
 
@@ -118,4 +118,17 @@ class ErrorContractTest {
                 .andExpect(status().isInternalServerError())
                 .andExpect(content().string(not(containsString("exploded with secrets"))));
     }
+
+    @org.springframework.boot.test.context.TestConfiguration
+    static class MetricsConfig {
+        @org.springframework.context.annotation.Bean
+        io.micrometer.core.instrument.MeterRegistry meterRegistry() {
+            return new io.micrometer.core.instrument.simple.SimpleMeterRegistry();
+        }
+        @org.springframework.context.annotation.Bean
+        IndexingMetrics indexingMetrics(io.micrometer.core.instrument.MeterRegistry registry) {
+            return new IndexingMetrics(registry);
+        }
+    }
+
 }

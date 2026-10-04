@@ -3,17 +3,16 @@ package com.cartograph.api;
 import com.cartograph.application.GraphSnapshotRepository;
 import com.cartograph.application.GraphSnapshotRepository.RepositorySummary;
 import com.cartograph.application.IndexRepositoryService;
+import com.cartograph.graph.model.GraphSnapshot;
 import jakarta.validation.Valid;
 
 import java.util.List;
 import java.util.Optional;
 
-import com.cartograph.application.GraphSnapshotRepository.RepositorySummary;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -24,13 +23,18 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/v1")
 public final class IndexController {
     private final IndexRepositoryService service;
+    private final IndexingMetrics metrics;
 
     /**
      * Creates the API controller.
      *
      * @param service application use case that indexes a repository URL
+     * @param metrics driving-adapter metrics for the indexing endpoint
      */
-    public IndexController(IndexRepositoryService service) { this.service = service; }
+    public IndexController(IndexRepositoryService service, IndexingMetrics metrics) {
+        this.service = service;
+        this.metrics = metrics;
+    }
 
     /**
      * Indexes a GitHub repository and returns the graph for its resolved commit.
@@ -40,7 +44,8 @@ public final class IndexController {
      */
     @PostMapping("/index")
     public ResponseEntity<GraphSnapshotResponse> index(@Valid @RequestBody IndexRepositoryRequest request) {
-        return ResponseEntity.ok(GraphSnapshotResponse.from(service.index(request.repositoryUrl())));
+        GraphSnapshot snapshot = metrics.recordIndex(() -> service.index(request.repositoryUrl()));
+        return ResponseEntity.ok(GraphSnapshotResponse.from(snapshot));
     }
 
     @GetMapping("/repositories")

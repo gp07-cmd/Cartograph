@@ -27,7 +27,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.setup.MockMvcBuilders.standaloneSetup;
 
 @WebMvcTest(controllers = IndexController.class)
-@ContextConfiguration(classes = {IndexController.class, ApiExceptionHandler.class})
+@ContextConfiguration(classes = {IndexController.class, ApiExceptionHandler.class, IndexControllerTest.MetricsConfig.class})
 class IndexControllerTest {
     @Autowired MockMvc mvc;
     @Autowired ObjectMapper mapper;
@@ -57,7 +57,7 @@ class IndexControllerTest {
 
     @Test
     void mapsMissingHandlerToStructuredNotFound() throws Exception {
-        MockMvc withoutResourceHandlers = standaloneSetup(new IndexController(service))
+        MockMvc withoutResourceHandlers = standaloneSetup(new IndexController(service, new IndexingMetrics(new io.micrometer.core.instrument.simple.SimpleMeterRegistry())))
                 .setControllerAdvice(new ApiExceptionHandler())
                 .build();
 
@@ -180,4 +180,17 @@ class IndexControllerTest {
                 .andExpect(status().isPayloadTooLarge())
                 .andExpect(jsonPath("$.code").value("REPOSITORY_LIMIT_EXCEEDED"));
     }
+
+    @org.springframework.boot.test.context.TestConfiguration
+    static class MetricsConfig {
+        @org.springframework.context.annotation.Bean
+        io.micrometer.core.instrument.MeterRegistry meterRegistry() {
+            return new io.micrometer.core.instrument.simple.SimpleMeterRegistry();
+        }
+        @org.springframework.context.annotation.Bean
+        IndexingMetrics indexingMetrics(io.micrometer.core.instrument.MeterRegistry registry) {
+            return new IndexingMetrics(registry);
+        }
+    }
+
 }
