@@ -30,3 +30,48 @@ treat an unknown code per its HTTP status (4xx = fix the request or back off,
 Stack traces, exception messages from `INTERNAL_ERROR`, GitHub tokens, or request
 credentials. If you observe any of those in an error body, that itself is a bug —
 please report it.
+
+
+## Failure paths
+
+### Upstream GitHub failure
+
+```mermaid
+sequenceDiagram
+    actor Client
+    participant API as Index API
+    participant Service as Index service
+    participant GitHub as GitHub adapter
+    Client->>API: POST /api/v1/index
+    API->>Service: Validated repository URL
+    Service->>GitHub: Resolve ref / fetch sources
+    GitHub--xService: Unusable response
+    Service-->>Client: 502 { code: "UPSTREAM_GITHUB_ERROR" }
+```
+
+### Guardrail rejection
+
+```mermaid
+sequenceDiagram
+    actor Client
+    participant API as Index API
+    participant Service as Index service
+    participant Limits as IndexingLimits
+    Client->>API: POST /api/v1/index
+    API->>Service: Validated repository URL
+    Service->>Limits: Validate tree sizes
+    Limits--xService: RepositoryLimitException
+    Service-->>Client: 413 { code: "REPOSITORY_LIMIT_EXCEEDED" }
+```
+
+### Client throttling
+
+```mermaid
+sequenceDiagram
+    actor Client
+    participant Limiter as Rate limiter
+    participant API as Index API
+    Client->>Limiter: POST /api/v1/index
+    Limiter--xClient: 429 Rate-After header set
+    Note over Client: { code: "RATE_LIMIT_EXCEEDED" } — wait, then retry
+```
