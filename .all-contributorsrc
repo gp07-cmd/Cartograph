@@ -1,0 +1,26 @@
+{
+  "files": ["README.md"],
+  "imageSize": 100,
+  "commit": false,
+  "contributorsPerLine": 4,
+  "projectName": "cartograph",
+  "projectOwner": "pacman-cli",
+  "repoHost": "https://github.com",
+  "repoType": "github",
+  "contributors": [
+    {
+      "login": "pacman-cli",
+      "name": "MD. Ashikur Rahman Puspo",
+      "avatar_url": "https://avatars.githubusercontent.com/u/107134550?v=4",
+      "profile": "https://github.com/pacman-cli",
+      "contributions": ["code", "doc", "ideas", "test", "infra"]
+    },
+    {
+      "login": "TheIrvin",
+      "name": "TheIrvin",
+      "avatar_url": "https://avatars.githubusercontent.com/u/183129452?v=4",
+      "profile": "https://github.com/TheIrvin",
+      "contributions": ["doc"]
+    }
+  ]
+}

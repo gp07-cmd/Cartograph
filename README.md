@@ -348,6 +348,35 @@ Want to share Cartograph? Use the [launch kit](docs/launch-kit.md) for accurate 
 | Ground rules for AI coding agents | [`AGENTS.md`](AGENTS.md) |
 | Architecture decision records | [`docs/decisions/`](docs/decisions/README.md) — index + template |
 
+## 👥 Contributors ✨
+
+<!-- ALL-CONTRIBUTORS-LIST:START - Do not remove or modify this section -->
+<table>
+  <tr>
+    <td align="center">
+      <a href="https://github.com/pacman-cli">
+        <img src="https://avatars.githubusercontent.com/u/107134550?v=4" width="100px;" alt=""/>
+        <br /><sub><b>MD. Ashikur Rahman Puspo</b></sub>
+      </a>
+      <br />
+      <a href="https://github.com/pacman-cli/Cartograph/commits?author=pacman-cli" title="Code">💻</a>
+      <a href="#documentation" title="Documentation">📖</a>
+      <a href="#ideas" title="Ideas">🤔</a>
+      <a href="#infra" title="Infrastructure">🚧</a>
+      <a href="https://github.com/pacman-cli/Cartograph/commits?author=pacman-cli" title="Tests">⚠️</a>
+    </td>
+    <td align="center">
+      <a href="https://github.com/TheIrvin">
+        <img src="https://avatars.githubusercontent.com/u/183129452?v=4" width="100px;" alt=""/>
+        <br /><sub><b>TheIrvin</b></sub>
+      </a>
+      <br />
+      <a href="https://github.com/pacman-cli/Cartograph/pull/25" title="Documentation">📖</a>
+    </td>
+  </tr>
+</table>
+<!-- ALL-CONTRIBUTORS-LIST:STOP -->
+
 ## 📄 License
 
 [MIT](LICENSE) © Cartograph contributors

@@ -87,6 +87,14 @@ Cartograph is a **hexagonal (ports & adapters)** service. To keep it that way:
 - CI must be green; a maintainer will help if your PR has conflicts or failing tests.
 - Reviews may be iterative — that's normal, not rejection.
 
+## 🏅 Recognition
+
+Contributions of every kind are credited in the README contributors table — code,
+documentation, ideas, tests, infrastructure, and bug reports. The table follows the
+[all-contributors specification](https://allcontributors.org/docs/en/specification)
+(`.all-contributorsrc`); a maintainer updates it as part of merging meaningful work,
+or you can add yourself in your PR.
+
 ## 💬 Questions?
 
 Ask in [Discussions](https://github.com/pacman-cli/Cartograph/discussions) or inside the issue you're working on — no question is too small. See also our [Code of Conduct](CODE_OF_CONDUCT.md).
