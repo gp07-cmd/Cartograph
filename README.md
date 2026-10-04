@@ -346,6 +346,7 @@ Want to share Cartograph? Use the [launch kit](docs/launch-kit.md) for accurate 
 | Wave sequencing and cut lines | [`cartograph-execution-plan.md`](cartograph-execution-plan.md) |
 | Machine-readable feature status | [`cartograph-feature-tracker.csv`](cartograph-feature-tracker.csv) |
 | Ground rules for AI coding agents | [`AGENTS.md`](AGENTS.md) |
+| Architecture decision records | [`docs/decisions/`](docs/decisions/README.md) — index + template |
 
 ## 📄 License
 
