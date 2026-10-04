@@ -45,3 +45,5 @@ cartograph:
     enabled: true
     capacity: 30
     refill-per-minute: 60
+  cors:
+    allowed-origins: []
