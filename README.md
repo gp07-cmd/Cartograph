@@ -133,6 +133,8 @@ Only a JDK 17 and Maven are required — SQLite is embedded, nothing else to ins
 | `cartograph.cors.allowed-origins` | — (empty) | Origins allowed to call the API from browsers; empty disables CORS |
 | `cartograph.prewarm.enabled` | `false` | Index configured popular repositories at startup |
 | `cartograph.prewarm.repositories` | — (empty) | Comma-separated `owner/repo` list to pre-warm |
+| `cartograph.idempotency.ttl-seconds` | `86400` | How long idempotent responses are replayable |
+| `cartograph.idempotency.max-entries` | `1000` | Max cached idempotent responses |
 | `server.port` | `8080` | HTTP port |
 
 Set properties via `src/main/resources/application.yml`, command line (`--cartograph.sqlite.path=…`), or environment variables (relaxed binding: `CARTOGRAPH_GITHUB_MAX_FILES=5000`).
@@ -151,6 +153,8 @@ mvn spring-boot:run -Dspring-boot.run.arguments="--server.port=8081 --cartograph
 ### `GET /actuator/health`
 
 Liveness probe — returns `{"status":"UP"}` while the service is running.
+
+Set the `Idempotency-Key` header on `POST /api/v1/index` to make retries safe: the same key + same body replays the original response (`Idempotency-Replayed: true`); the same key with a different body is a `409 IDEMPOTENCY_CONFLICT`. No header — no change.
 
 ### `GET /api/v1/repositories`
 

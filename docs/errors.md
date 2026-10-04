@@ -15,6 +15,7 @@ treat an unknown code per its HTTP status (4xx = fix the request or back off,
 | `UPSTREAM_GITHUB_ERROR` | 502 | GitHub returned an unusable or unexpected response | Retry with backoff; report if persistent |
 | `REPOSITORY_LIMIT_EXCEEDED` | 413 | Repository exceeds the configured caps (`max-files`, `max-total-bytes`, `max-file-bytes`, `max-response-bytes`) | Use a smaller repository or raise the caps deliberately |
 | `RATE_LIMIT_EXCEEDED` | 429 | **You** exceeded Cartograph's per-client indexing rate limit (`Retry-After` header is set) | Wait the indicated seconds, then retry |
+| `IDEMPOTENCY_CONFLICT` | 409 | The same `Idempotency-Key` was reused with a different request body | Send a fresh key, or resend the original body |
 | `INTERNAL_ERROR` | 500 | Unexpected server failure; the body never contains exception details | Retry later; check server logs for the `correlationId` when present |
 
 ## The two 429s

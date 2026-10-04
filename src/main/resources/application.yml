@@ -57,3 +57,6 @@ cartograph:
   prewarm:
     enabled: false
     repositories: []
+  idempotency:
+    ttl-seconds: 86400
+    max-entries: 1000
