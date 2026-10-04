@@ -82,6 +82,19 @@ mvn spring-boot:run
 </details>
 
 <details>
+<summary><b>Docker</b> (click to expand)</summary>
+
+```bash
+docker compose up --build          # or: docker build -t cartograph . && docker run -p 8080:8080 cartograph
+curl -X POST http://localhost:8080/api/v1/index \
+  -H 'Content-Type: application/json' \
+  -d '{"repositoryUrl":"https://github.com/sindresorhus/is"}'
+```
+Snapshots persist in the `cartograph-data` volume; set `GITHUB_TOKEN` in the
+environment to raise GitHub rate limits.
+</details>
+
+<details>
 <summary><b>Linux / WSL / Windows via SDKMAN</b> (click to expand)</summary>
 
 ```bash

@@ -1,0 +1,8 @@
+target/
+data/
+.git/
+.idea/
+.worktrees/
+.zcode/
+.superpowers/
+.archify/
