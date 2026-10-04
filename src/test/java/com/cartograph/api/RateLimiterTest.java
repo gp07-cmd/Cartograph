@@ -103,4 +103,55 @@ class RateLimiterTest {
             return now;
         }
     }
+    @Test
+    void hammeringOneKeyFromManyThreadsAllowsExactlyCapacity() throws Exception {
+        RateLimiter limiter = new RateLimiter(100, 60, clock);
+        int threads = 200;
+        var pool = java.util.concurrent.Executors.newFixedThreadPool(threads);
+        var start = new java.util.concurrent.CountDownLatch(1);
+        var allowed = java.util.Collections.newSetFromMap(new java.util.concurrent.ConcurrentHashMap<String, Boolean>());
+        try {
+            var futures = java.util.stream.IntStream.range(0, threads)
+                    .mapToObj(i -> pool.submit(() -> {
+                        start.await();
+                        return limiter.tryAcquire("shared-key").isEmpty();
+                    }))
+                    .toList();
+            start.countDown();
+            for (var future : futures) {
+                if (future.get(5, java.util.concurrent.TimeUnit.SECONDS)) {
+                    allowed.add(Integer.toString(allowed.size()));
+                }
+            }
+            assertEquals(100, allowed.size());
+        } finally {
+            pool.shutdownNow();
+        }
+    }
+
+    @Test
+    void multiKeyHammerPreservesPerKeyCounts() throws Exception {
+        RateLimiter limiter = new RateLimiter(1, 60, clock);
+        var pool = java.util.concurrent.Executors.newFixedThreadPool(50);
+        var start = new java.util.concurrent.CountDownLatch(1);
+        var keys = java.util.stream.IntStream.range(0, 50).mapToObj(i -> "key-" + i).toList();
+        try {
+            var futures = keys.stream()
+                    .flatMap(key -> java.util.stream.IntStream.range(0, 4)
+                            .mapToObj(i -> pool.submit(() -> {
+                                start.await();
+                                return limiter.tryAcquire(key).isEmpty();
+                            })))
+                    .toList();
+            start.countDown();
+            long allowed = 0;
+            for (var future : futures) {
+                if (future.get(5, java.util.concurrent.TimeUnit.SECONDS)) allowed++;
+            }
+            assertEquals(50, allowed);
+        } finally {
+            pool.shutdownNow();
+        }
+    }
+
 }

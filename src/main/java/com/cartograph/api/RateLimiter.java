@@ -20,8 +20,6 @@ public final class RateLimiter {
     private static final class Bucket {
         double tokens;
         long lastRefillNanos;
-        boolean allowed;
-        long retryAfterSeconds;
     }
 
     public RateLimiter(int capacity, int refillPerMinute, Clock clock) {
@@ -42,7 +40,11 @@ public final class RateLimiter {
     public OptionalLong tryAcquire(String key) {
         var instant = clock.instant();
         long now = instant.getEpochSecond() * 1_000_000_000L + instant.getNano();
-        Bucket bucket = buckets.compute(key, (ignored, existing) -> {
+        // decision travels through a per-call channel: the shared Bucket is
+        // mutated by every thread computing on the same key, so its fields
+        // must never be read outside the compute critical section
+        long[] decision = new long[2];
+        buckets.compute(key, (ignored, existing) -> {
             Bucket b = existing == null ? new Bucket() : existing;
             if (existing == null) {
                 b.tokens = capacity;
@@ -53,14 +55,14 @@ public final class RateLimiter {
             }
             if (b.tokens >= 1) {
                 b.tokens -= 1;
-                b.allowed = true;
+                decision[0] = 1;
             } else {
                 double deficit = 1 - b.tokens;
-                b.allowed = false;
-                b.retryAfterSeconds = Math.max(1, (long) Math.ceil(deficit / refillPerNano / 1_000_000_000.0));
+                decision[0] = 0;
+                decision[1] = Math.max(1, (long) Math.ceil(deficit / refillPerNano / 1_000_000_000.0));
             }
             return b;
         });
-        return bucket.allowed ? OptionalLong.empty() : OptionalLong.of(bucket.retryAfterSeconds);
+        return decision[0] == 1 ? OptionalLong.empty() : OptionalLong.of(decision[1]);
     }
 }
