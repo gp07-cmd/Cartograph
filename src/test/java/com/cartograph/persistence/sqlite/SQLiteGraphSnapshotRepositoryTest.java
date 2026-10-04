@@ -164,4 +164,44 @@ class SQLiteGraphSnapshotRepositoryTest {
         assertThat(repository.listRepositories()).isEmpty();
     }
 
+    @org.junit.jupiter.api.Test
+    void concurrentWritersForDistinctRepositoriesAllSucceed() throws Exception {
+        org.sqlite.SQLiteDataSource wal = new org.sqlite.SQLiteDataSource();
+        wal.setEnforceForeignKeys(true);
+        Path database = java.nio.file.Files.createTempFile("cartograph-wal-", ".db");
+        wal.setUrl("jdbc:sqlite:" + database + "?journal_mode=wal&busy_timeout=5000");
+        SQLiteGraphSnapshotRepository walRepository = new SQLiteGraphSnapshotRepository(wal);
+
+        int threads = 4;
+        int rounds = 5;
+        var pool = java.util.concurrent.Executors.newFixedThreadPool(threads);
+        var start = new java.util.concurrent.CountDownLatch(1);
+        var errors = new java.util.concurrent.ConcurrentLinkedQueue<Exception>();
+        try {
+            var futures = java.util.stream.IntStream.range(0, threads)
+                    .mapToObj(t -> pool.submit(() -> {
+                        start.await();
+                        for (int round = 0; round < rounds; round++) {
+                            try {
+                                walRepository.save(snapshot("wal/repo-" + t, "sha-" + round));
+                            } catch (Exception e) {
+                                errors.add(e);
+                            }
+                        }
+                        return null;
+                    }))
+                    .toList();
+            start.countDown();
+            for (var future : futures) future.get(30, java.util.concurrent.TimeUnit.SECONDS);
+            assertThat(errors).isEmpty();
+            for (int t = 0; t < threads; t++) {
+                for (int round = 0; round < rounds; round++) {
+                    assertThat(walRepository.find("wal/repo-" + t, "sha-" + round)).isPresent();
+                }
+            }
+        } finally {
+            pool.shutdownNow();
+        }
+    }
+
 }
