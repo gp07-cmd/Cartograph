@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 
 /** Application orchestration that reuses completed graph snapshots for resolved commits. */
 @Service
@@ -18,6 +19,12 @@ public final class IndexRepositoryService {
     private final RepositoryFetcher fetcher;
     private final GraphSnapshotRepository snapshots;
     private final GraphBuilder graphBuilder;
+    /**
+     * Instance-local per-repository locks: concurrent same-commit indexing
+     * performs exactly one resolve/fetch/build/save sequence. Multi-instance
+     * deployments need server-side coordination instead (see ADR 0001).
+     */
+    private final ConcurrentHashMap<String, Object> indexLocks = new ConcurrentHashMap<>();
 
     /**
      * @param normalizer validates and converts repository URLs into references
@@ -51,17 +58,20 @@ public final class IndexRepositoryService {
      */
     public GraphSnapshot index(RepositoryRef ref) {
         Objects.requireNonNull(ref, "repository reference");
-        String commit = fetcher.resolveCommit(ref);
-        return snapshots.find(ref.coordinate(), commit).orElseGet(() -> {
-            RepositorySnapshot fetched = fetcher.fetchResolved(ref, commit);
-            if (fetched == null || !Objects.equals(commit, fetched.commitSha())
-                    || !ref.coordinate().equals(fetched.repository())) {
-                throw new IllegalStateException("Fetched repository does not match the resolved commit");
-            }
-            GraphSnapshot built = graphBuilder.build(fetched);
-            snapshots.save(built);
-            return built;
-        });
+        Object lock = indexLocks.computeIfAbsent(ref.coordinate(), key -> new Object());
+        synchronized (lock) {
+            String commit = fetcher.resolveCommit(ref);
+            return snapshots.find(ref.coordinate(), commit).orElseGet(() -> {
+                RepositorySnapshot fetched = fetcher.fetchResolved(ref, commit);
+                if (fetched == null || !Objects.equals(commit, fetched.commitSha())
+                        || !ref.coordinate().equals(fetched.repository())) {
+                    throw new IllegalStateException("Fetched repository does not match the resolved commit");
+                }
+                GraphSnapshot built = graphBuilder.build(fetched);
+                snapshots.save(built);
+                return built;
+            });
+        }
     }
 
     /** Returns the latest stored snapshot for {@code repository} without touching GitHub. */
