@@ -77,4 +77,23 @@ class GraphBuilderTest {
         assertEquals(new SourceLocation("locations.ts", 2, 20, 2, 28), call.location());
         assertTrue(graph.edges().stream().allMatch(e -> e.location() != null));
     }
+    @Test
+    void nodeIdsAreDeterministicUnderShuffledFileOrder() {
+        var files = List.of(
+                new SourceFile("main.ts", "export const greet = (n: string) => `hi ${n}`;\nexport function run() { return greet(\"x\"); }", "typescript"),
+                new SourceFile("utils.ts", "export function helper() { return run(); }\nexport const answer = 42;", "typescript"),
+                new SourceFile("api.ts", "export * from \"./utils\";\nexport class Client { ping() { return helper(); } }", "typescript"));
+
+        var builder = new GraphBuilder(new JavaScriptTypeScriptParser());
+        GraphSnapshot first = builder.build(new RepositorySnapshot("acme/demo", "abc123", files));
+
+        var random = new java.util.Random(20261003L);
+        for (int iteration = 0; iteration < 50; iteration++) {
+            var shuffled = new java.util.ArrayList<>(files);
+            java.util.Collections.shuffle(shuffled, random);
+            GraphSnapshot next = builder.build(new RepositorySnapshot("acme/demo", "abc123", shuffled));
+            org.junit.jupiter.api.Assertions.assertEquals(first, next, "iteration " + iteration);
+        }
+    }
+
 }
