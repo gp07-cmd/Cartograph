@@ -5,6 +5,8 @@ import com.cartograph.graph.model.GraphSnapshot;
 import com.cartograph.graph.model.RepositoryRef;
 import com.cartograph.graph.model.RepositorySnapshot;
 import com.cartograph.ingestion.GitHubUrlNormalizer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -15,6 +17,7 @@ import java.util.concurrent.ConcurrentHashMap;
 /** Application orchestration that reuses completed graph snapshots for resolved commits. */
 @Service
 public final class IndexRepositoryService {
+    private static final Logger LOG = LoggerFactory.getLogger(IndexRepositoryService.class);
     private final GitHubUrlNormalizer normalizer;
     private final RepositoryFetcher fetcher;
     private final GraphSnapshotRepository snapshots;
@@ -60,8 +63,10 @@ public final class IndexRepositoryService {
         Objects.requireNonNull(ref, "repository reference");
         Object lock = indexLocks.computeIfAbsent(ref.coordinate(), key -> new Object());
         synchronized (lock) {
+            long startedAt = System.nanoTime();
             String commit = fetcher.resolveCommit(ref);
-            return snapshots.find(ref.coordinate(), commit).orElseGet(() -> {
+            var cached = snapshots.find(ref.coordinate(), commit);
+            GraphSnapshot result = cached.orElseGet(() -> {
                 RepositorySnapshot fetched = fetcher.fetchResolved(ref, commit);
                 if (fetched == null || !Objects.equals(commit, fetched.commitSha())
                         || !ref.coordinate().equals(fetched.repository())) {
@@ -71,6 +76,10 @@ public final class IndexRepositoryService {
                 snapshots.save(built);
                 return built;
             });
+            LOG.info("Indexed repository={} commit={} outcome={} durationMs={}",
+                    ref.coordinate(), commit, cached.isPresent() ? "cache-hit" : "built",
+                    (System.nanoTime() - startedAt) / 1_000_000);
+            return result;
         }
     }
 

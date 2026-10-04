@@ -13,6 +13,13 @@ spring:
 server:
   port: 8080
 
+logging:
+  structured:
+    format:
+      console: logstash
+  pattern:
+    level: "%5p [%X{correlationId}]"
+
 management:
   endpoints:
     web:

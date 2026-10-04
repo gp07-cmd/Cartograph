@@ -14,7 +14,6 @@ import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.servlet.NoHandlerFoundException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
-import java.util.UUID;
 
 /** Maps request, upstream, and unexpected failures to the API's stable error response. */
 @RestControllerAdvice
@@ -59,8 +58,8 @@ public final class ApiExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     ResponseEntity<ApiErrorResponse> internal(Exception exception) {
-        String correlationId = UUID.randomUUID().toString();
-        LOG.error("Unhandled indexing failure correlationId={}", correlationId, exception);
+        LOG.error("Unhandled indexing failure correlationId={}",
+                org.slf4j.MDC.get(CorrelationIdFilter.MDC_KEY), exception);
         return response(HttpStatus.INTERNAL_SERVER_ERROR, "INTERNAL_ERROR", "An internal error occurred.");
     }
 
